@@ -21,7 +21,7 @@ import sys
 
 from .core import RULES, Ctx, Report, run_rules, SEVERITY_ORDER
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 PRESETS = {
     # 默认：8 条最致命，零配置

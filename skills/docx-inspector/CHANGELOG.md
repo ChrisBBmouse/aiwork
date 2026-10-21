@@ -2,6 +2,32 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [0.1.2] - 2026-10-21
+
+### Fixed
+
+- **C10 在非 Windows 平台上完全失效** —— `installed_fonts()` 只读 Windows 注册表与
+  `C:\Windows\Fonts`，在 Linux / macOS 上返回空集，C10 退化为「无法枚举本机字体，
+  跳过检查」，字体检查实际处于关闭状态。
+
+### Added
+
+- 字体枚举扩展为四路探测：Windows 注册表 → Windows 字体目录 → fontconfig
+  （`fc-list`，Linux）→ macOS（`system_profiler`）。
+- 枚举结果用 `functools.lru_cache` 缓存，同一进程内只探测一次
+  （Windows 上 273 个字体族耗时 4 ms）。
+- CI 的 ubuntu job 现在能真正执行 C10 断言（此前枚举为空会自动跳过）。
+
+### Note
+
+> 此前 CI 的 4/4 全绿掩盖了这个缺陷：ubuntu 上 `HAS_FONT_ENV` 为 `False`，
+> 测试自动 SKIP 了 C10 断言。**"跳过"不等于"通过"**。
+
+### Credit
+
+跨平台缺口由一次 WSL2 环境的外部交叉测试发现（WSL2 / Python 3.12，
+fontconfig 可枚举 85 个字体族）。
+
 ## [0.1.1] - 2026-10-21
 
 用 5 份真实业务文档做压测后，修复了误报与噪音。**默认规则现在在这批文档上零误报。**

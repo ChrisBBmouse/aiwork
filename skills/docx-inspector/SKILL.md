@@ -2,7 +2,7 @@
 name: docx-inspector
 description: "对任意 .docx 做排版体检，不生成文档。检查包结构损坏、表格/图片超出可用版心、字体本机缺失、theme 覆盖字体、列宽与 tblGrid 不符、编号跨批串号等 12 项确定性问题，可选渲染成图并用红框标出实际溢出区域。触发词：检查Word、文档排版有问题、表格超宽、Word打开异常、字体变了、编号乱了、交付前验收、docx 体检、linter。亦触发：audit docx、check word layout、table too wide、table overflow、font missing、numbering restart、word file broken、docx linter、validate word document。"
 category: knowledge
-version: 0.1.1
+version: 0.1.2
 author: 本机自研
 license: MIT
 ---

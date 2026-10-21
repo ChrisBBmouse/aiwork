@@ -9,5 +9,5 @@
 from . import core          # noqa: F401
 from . import rules         # noqa: F401  触发规则注册
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = ["core", "rules"]

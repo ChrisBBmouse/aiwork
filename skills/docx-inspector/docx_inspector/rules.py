@@ -6,8 +6,11 @@
 """
 from __future__ import annotations
 
+import functools
 import os
+import shutil
 import struct
+import subprocess
 import zipfile
 
 from docx.oxml.ns import qn
@@ -38,9 +41,19 @@ _PSEUDO_FONTS = {"", "default", "inherit"}
 
 
 def installed_fonts() -> set[str]:
-    """本机已安装字体族名集合（注册表 + 字体目录文件名双路）"""
+    """本机已安装字体族名集合。
+
+    探测顺序：Windows 注册表 → Windows 字体目录 → fontconfig → macOS。
+    底层结果缓存（frozenset），避免同进程内重复枚举。
+    """
+    return set(_installed_fonts_cached())
+
+
+@functools.lru_cache(maxsize=1)
+def _installed_fonts_cached() -> frozenset:
     names: set[str] = set()
 
+    # ---- 1) Windows：注册表 ----
     try:
         import winreg
         key = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts"
@@ -67,15 +80,66 @@ def installed_fonts() -> set[str]:
     except Exception:                              # noqa: BLE001
         pass
 
-    # 字体目录文件名兜底（注册表值名可能是英文，中文 Word 写中文名）
+    # ---- 2) Windows：字体目录文件名兜底（中文 Word 常写中文名） ----
     fdir = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")
     if os.path.isdir(fdir):
-        existing = {f.lower() for f in os.listdir(fdir)}
-        for fn, family in _FONT_FILES.items():
-            if fn.lower() in existing:
-                names.add(family)
+        try:
+            existing = {f.lower() for f in os.listdir(fdir)}
+            for fn, family in _FONT_FILES.items():
+                if fn.lower() in existing:
+                    names.add(family)
+        except OSError:
+            pass
 
-    return names
+    # ---- 3) Linux / 其他 fontconfig 系统 ----
+    if not names:
+        names |= _fonts_from_fontconfig()
+
+    # ---- 4) macOS 兜底 ----
+    if not names:
+        names |= _fonts_from_macos()
+
+    return frozenset(names)
+
+
+def _fonts_from_fontconfig() -> set[str]:
+    """用 fc-list 枚举字体族（Linux 及安装了 fontconfig 的系统）。"""
+    out: set[str] = set()
+    fc = shutil.which("fc-list")
+    if not fc:
+        return out
+    try:
+        r = subprocess.run([fc, ":", "family"], capture_output=True, text=True,
+                           timeout=20, errors="replace")
+        for line in (r.stdout or "").splitlines():
+            for part in line.split(","):
+                p = part.strip()
+                if p:
+                    out.add(p)
+    except Exception:                              # noqa: BLE001
+        pass
+    return out
+
+
+def _fonts_from_macos() -> set[str]:
+    """macOS 兜底：system_profiler 抓 Family / Full Name（较慢，仅首次调用）。"""
+    out: set[str] = set()
+    sp = shutil.which("system_profiler")
+    if not sp:
+        return out
+    try:
+        r = subprocess.run([sp, "SPFontsDataType"], capture_output=True,
+                           text=True, timeout=60, errors="replace")
+        for line in (r.stdout or "").splitlines():
+            t = line.strip()
+            for prefix in ("Family:", "Full Name:"):
+                if t.startswith(prefix):
+                    v = t[len(prefix):].strip()
+                    if v:
+                        out.add(v)
+    except Exception:                              # noqa: BLE001
+        pass
+    return out
 
 
 # ================================================================== A 包结构
