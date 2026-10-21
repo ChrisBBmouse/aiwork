@@ -115,29 +115,37 @@ echo $?   # 0 通过 / 1 有 error / 2 无法解析
 
 ## 安装
 
-**作为 Agent Skill（Claude Code / Codex / OpenCode / Chatbox 等）：**
+**方式一：作为 Agent Skill（推荐）**
 
 ```bash
-npx skills add ChrisBBmouse/docx-inspector
+npx skills add ChrisBBmouse/aiwork --skill docx-inspector
 ```
 
-`SKILL.md` 在仓库根目录，安装时无需 `--skill` 参数。
+> 需要 **Node 20.12+**。`skills` CLI 依赖 `node:util.styleText`，Node 18 及以下会直接
+> 抛 `SyntaxError` —— 这不是网络问题，升级 Node 即可。
 
-**作为命令行工具：**
+**方式二：手动安装**（Node 版本不足、网络受限，或你的 agent 不读 `.agents/skills/`）
 
 ```bash
-pip install git+https://github.com/ChrisBBmouse/docx-inspector
-# 或克隆后 pip install -e .
+git clone https://github.com/ChrisBBmouse/aiwork.git
+cp -r aiwork/skills/docx-inspector <你的 agent skills 目录>/
+
+# 常见位置：
+#   Claude Code    ~/.claude/skills/
+#   OpenCode       ~/.config/opencode/skills/
+#   Codex / 通用   ~/.agents/skills/
+```
+
+> ⚠️ 手动复制时**整个目录都要拷**（`SKILL.md`、`docx_inspector/`、`tests/`、`case_*.docx`）。
+> 只拷 `SKILL.md` 或漏掉 fixture，会导致规则不可用或测试失败。
+
+**方式三：只当命令行工具用**
+
+```bash
+git clone https://github.com/ChrisBBmouse/aiwork.git
+cd aiwork/skills/docx-inspector
+pip install -e .
 docx-inspector 报告.docx
-```
-
-**只想要本体：**
-
-```bash
-git clone https://github.com/ChrisBBmouse/docx-inspector.git
-cd docx-inspector
-pip install python-docx
-python -m docx_inspector 报告.docx
 ```
 
 ## 依赖

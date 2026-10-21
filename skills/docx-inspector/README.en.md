@@ -134,6 +134,42 @@ generate with any docx skill  →  docx-inspector  →  fix what it reports  →
 
 ## Install
 
+**Option 1 — as an agent skill (recommended)**
+
+```bash
+npx skills add ChrisBBmouse/aiwork --skill docx-inspector
+```
+
+> Requires **Node 20.12+**. The `skills` CLI uses `node:util.styleText`; on Node 18 and
+> below it throws `SyntaxError` immediately — that is not a network problem.
+
+**Option 2 — manual install** (old Node, restricted network, or an agent that does not
+read `.agents/skills/`)
+
+```bash
+git clone https://github.com/ChrisBBmouse/aiwork.git
+cp -r aiwork/skills/docx-inspector <your agent skills dir>/
+
+# common locations:
+#   Claude Code    ~/.claude/skills/
+#   OpenCode       ~/.config/opencode/skills/
+#   Codex / others ~/.agents/skills/
+```
+
+> Copy the **whole directory** (`SKILL.md`, `docx_inspector/`, `tests/`, `case_*.docx`).
+> Copying only `SKILL.md` leaves rules or tests broken.
+
+**Option 3 — CLI only**
+
+```bash
+git clone https://github.com/ChrisBBmouse/aiwork.git
+cd aiwork/skills/docx-inspector
+pip install -e .
+docx-inspector report.docx
+```
+
+**Runtime dependencies**
+
 ```bash
 pip install python-docx
 # optional, only for --annotate
