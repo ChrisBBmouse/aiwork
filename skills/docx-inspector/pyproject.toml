@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docx-inspector"
+version = "0.1.1"
+description = "Layout audit for .docx files: package structure, page geometry, fonts, flow layout, numbering"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "ChrisChu" }]
+keywords = [
+    "docx",
+    "word",
+    "linter",
+    "ooxml",
+    "python-docx",
+    "document-quality",
+    "accessibility",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Text Processing :: Markup",
+]
+dependencies = ["python-docx>=1.1"]
+
+[project.optional-dependencies]
+# 渲染标注图需要（--annotate）
+render = ["pymupdf>=1.23", "pillow>=9"]
+
+[project.scripts]
+docx-inspector = "docx_inspector.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ChrisBBmouse/aiwork/tree/main/skills/docx-inspector"
+Issues = "https://github.com/ChrisBBmouse/aiwork/issues"
+
+[tool.setuptools.packages.find]
+include = ["docx_inspector*"]
+
+[tool.setuptools]
+# case_*.docx 与 docs/ 不进 wheel，只留在仓库里作测试与展示
+include-package-data = false

@@ -1,0 +1,16 @@
+# 默认按文本处理，统一 LF（避免 Windows 上 CRLF 混入）
+* text=auto eol=lf
+
+# 二进制文件：绝不做换行转换（docx 一旦被转换就会损坏）
+*.docx binary
+*.doc binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
+
+# 脚本按平台保留原生换行
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
