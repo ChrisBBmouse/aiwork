@@ -40,15 +40,28 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Run every skill's tests
+      - name: Run every skill's fixture regression tests
         shell: bash
         run: |
           fail=0
           for t in skills/*/tests/run_tests.py; do
             [ -e "$t" ] || continue
             d=$(dirname "$(dirname "$t")")
-            echo "::group::test $d"
+            echo "::group::regression $d"
             (cd "$d" && python tests/run_tests.py) || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail
+
+      - name: Run every skill's unit tests
+        shell: bash
+        run: |
+          fail=0
+          for t in skills/*/tests/test_*.py; do
+            [ -e "$t" ] || continue
+            d=$(dirname "$(dirname "$t")")
+            echo "::group::unit $t"
+            (cd "$d" && python "tests/$(basename "$t")") || fail=1
             echo "::endgroup::"
           done
           exit $fail

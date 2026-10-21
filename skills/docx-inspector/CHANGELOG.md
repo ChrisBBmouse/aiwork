@@ -18,6 +18,8 @@
   （Windows 上 273 个字体族耗时 4 ms）。
 - CI 的 ubuntu job 现在能真正执行 C10 断言（此前枚举为空会自动跳过）。
 
+- `tests/test_fonts.py`：字体枚举的单元测试（fc-list 解析 / system_profiler 解析 / 缓存），因为这两条路径在 Windows 上无法端到端验证，只能靠 mock 锁住。
+
 ### Note
 
 > 此前 CI 的 4/4 全绿掩盖了这个缺陷：ubuntu 上 `HAS_FONT_ENV` 为 `False`，
