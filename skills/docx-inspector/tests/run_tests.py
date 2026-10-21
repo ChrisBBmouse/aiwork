@@ -53,6 +53,12 @@ CASES = [
 
     ("正文字体不一致 → C14 仅在 thesis 下启用",
      "case_font.docx", "thesis", 0, {"C10", "C14"}, set()),
+
+    # --- 第三方测试发现的两个缺陷的回归用例 ---
+    ("页面属性缺 pgMar → 不再崩成 exit 2",
+     "case_no_pgmar.docx", "plain", 0, set(), {"B7", "A1"}),
+    ("首行横向合并单元格 → D15 不应误报",
+     "case_merged_header.docx", "plain", 0, set(), {"D15"}),
 ]
 
 
@@ -89,6 +95,24 @@ def main():
             print("  [PASS] exit=%s 命中=%s" % (got_exit, sorted(got_ids) or "无"))
         else:
             fails += 1
+
+    # --- 专项断言：版心为推断值时必须显式告知用户 ---
+    print("-" * 68)
+    print("# 专项：页面属性缺失时 B5 必须报告「推断」")
+    try:
+        ctx = Ctx(os.path.join(ROOT, "case_no_pgmar.docx"))
+        try:
+            assert ctx.layout_inferred is True, "layout_inferred 应为 True"
+            rep = Report(os.path.join(ROOT, "case_no_pgmar.docx"))
+            run_rules(ctx, rep, rules_for_preset("plain"), set())
+            msgs = [f.message for f in rep.findings if f.rule == "B5"]
+            assert any("推断" in m for m in msgs), "B5 未报告推断提示: %s" % msgs
+            print("  [PASS] layout_inferred=True 且 B5 含「推断」提示")
+        finally:
+            ctx.close()
+    except AssertionError as e:
+        print("  [FAIL] %s" % e)
+        fails += 1
 
     print("=" * 68)
     print("%d 个用例，%d 失败" % (len(CASES), fails))

@@ -68,8 +68,11 @@ def render_text(rep: Report, ctx: Ctx | None):
         return "\n".join(out)
 
     items = sorted(rep.findings, key=lambda f: (SEVERITY_ORDER.get(f.severity, 9), f.rule))
-    noise = [f for f in items if f.severity == "info" and f.rule == "B5"]
-    items = [f for f in items if f not in noise]      # B5 的 info 只是报平安，不刷屏
+    # B5 的 info 通常是「报平安」，过滤掉；但「版心为推断值」是必须让用户
+    # 看到的信号，不能当噪音吞掉
+    noise = [f for f in items
+             if f.severity == "info" and f.rule == "B5" and "推断" not in f.message]
+    items = [f for f in items if f not in noise]
 
     if not items:
         out.append("未发现问题。")

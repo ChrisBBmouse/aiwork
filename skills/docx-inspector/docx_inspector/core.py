@@ -82,14 +82,36 @@ class Ctx:
         doc = self.doc
         sec = doc.sections[0]
         self.section = sec
-        self.page_w = Emu(sec.page_width)
-        self.page_h = Emu(sec.page_height)
-        self.margin_l = Emu(sec.left_margin)
-        self.margin_r = Emu(sec.right_margin)
-        self.margin_t = Emu(sec.top_margin)
-        self.margin_b = Emu(sec.bottom_margin)
-        self.usable_w = Emu(int(sec.page_width - sec.left_margin - sec.right_margin))
-        self.usable_h = Emu(int(sec.page_height - sec.top_margin - sec.bottom_margin))
+
+        # sectPr 可能不完整：部分文档只声明 pgSz 而不声明 pgMar（或反之），
+        # python-docx 对缺失项返回 None，直接 Emu(None) 会抛 TypeError，
+        # 而 Ctx 构造失败会被上层当成「无法解析」整篇跳过 —— 静默漏检。
+        # 回退值取 OOXML 规范默认（Ecma-376：pgSz 缺省 A4，pgMar 缺省 1440 twips）。
+        _TWIPS_TO_EMU = 635
+        _DEF_W, _DEF_H, _DEF_M = 11906, 16838, 1440       # A4 宽高 / 1 inch 边距
+
+        def _pick(val, default_twips):
+            return val if val is not None else default_twips * _TWIPS_TO_EMU
+
+        pw = _pick(sec.page_width, _DEF_W)
+        ph = _pick(sec.page_height, _DEF_H)
+        ml = _pick(sec.left_margin, _DEF_M)
+        mr = _pick(sec.right_margin, _DEF_M)
+        mt = _pick(sec.top_margin, _DEF_M)
+        mb = _pick(sec.bottom_margin, _DEF_M)
+
+        # 只要有一项是推断出来的，就记下来——B5 会把这件事明确报给用户，
+        # 避免「基于假设的版心」被当成文档的真实声明。
+        self.layout_inferred = None in (
+            sec.page_width, sec.page_height,
+            sec.left_margin, sec.right_margin,
+            sec.top_margin, sec.bottom_margin)
+
+        self.page_w, self.page_h = Emu(pw), Emu(ph)
+        self.margin_l, self.margin_r = Emu(ml), Emu(mr)
+        self.margin_t, self.margin_b = Emu(mt), Emu(mb)
+        self.usable_w = Emu(int(pw - ml - mr))
+        self.usable_h = Emu(int(ph - mt - mb))
 
         self._fonts_used = None
         self._used_styles = None

@@ -267,9 +267,16 @@ def r_b5_margin(ctx: Ctx):
                                "%s边距 %.2fcm 超过页宽一半" % (name, val.cm),
                                location="页面设置"))
     if not out:
-        out.append(Finding("B5", "info",
-                           "版心 %.2fcm × %.2fcm，页边距正常"
-                           % (P.usable_w.cm, P.usable_h.cm), location="页面设置"))
+        if getattr(P, "layout_inferred", False):
+            out.append(Finding(
+                "B5", "info",
+                "该文档未完整声明页面属性（缺 pgSz/pgMar），版心与页边距按 OOXML "
+                "默认值推断：%.2fcm × %.2fcm，四边 2.54cm。基于推断值，结论仅供参考"
+                % (P.usable_w.cm, P.usable_h.cm), location="页面设置"))
+        else:
+            out.append(Finding("B5", "info",
+                               "版心 %.2fcm × %.2fcm，页边距正常"
+                               % (P.usable_w.cm, P.usable_h.cm), location="页面设置"))
     return out
 
 
@@ -486,11 +493,18 @@ def r_d15_grid_mismatch(ctx: Ctx):
         grid_sum = sum(grid_vals)
         if grid_sum <= 0:
             continue
-        # 首行各单元格 tcW 求和
+        # 首行各单元格 tcW 求和。
+        # 必须遍历原始 <w:tc>，不能用 row.cells：python-docx 会把横向合并
+        # 单元格（gridSpan）按逻辑列展开，导致同一个 tcW 被累加多次 → 误报。
         tcw_vals = []
-        first_row = t.rows[0]
-        for cell in first_row.cells:
-            tcPr = cell._tc.tcPr
+        tr = t.rows[0]._tr
+        tcs = list(tr.findall(qn("w:tc")))
+        for sdt in tr.findall(qn("w:sdt")):          # 内容控件包裹的单元格
+            content = sdt.find(qn("w:sdtContent"))
+            if content is not None:
+                tcs.extend(content.findall(qn("w:tc")))
+        for tc in tcs:
+            tcPr = tc.find(qn("w:tcPr"))
             w = 0
             if tcPr is not None:
                 e = tcPr.find(qn("w:tcW"))

@@ -2,6 +2,24 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
+## [Unreleased]
+
+### Fixed
+
+- **页面属性缺失导致整篇无法解析**（静默漏检，危害高于误报）。部分文档的
+  `sectPr` 只声明 `pgSz` 而不声明 `pgMar`，python-docx 对缺失项返回 `None`，
+  `Emu(None)` 抛 `TypeError`，被上层当成「无法解析」整篇跳过。现在按 OOXML
+  规范默认值（A4 / 四边 1440 twips）推断，并由 `B5` 明确告知「版心为推断值」。
+- **D15 对横向合并单元格重复计数**。`row.cells` 会把 `gridSpan` 合并单元格按
+  逻辑列展开，同一个 `tcW` 被累加多次（实测一个跨 4 列的表头把 14.62cm 累加成
+  58.49cm）。改为遍历原始 `<w:tc>`，并兼容内容控件包裹的单元格。
+
+### Added
+
+- `case_no_pgmar.docx` / `case_merged_header.docx` 两个 fixture，以及对应的
+  回归断言与「推断值必须可见」的专项检查。
+- 这两个缺陷由一次独立的外部测试（WSL2 环境、10 份真实文档）发现。
+
 ## [0.1.2] - 2026-10-21
 
 ### Fixed
