@@ -2,31 +2,23 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循语义化版本。
 
-## [Unreleased]
-
-### Fixed
-
-- **页面属性缺失导致整篇无法解析**（静默漏检，危害高于误报）。部分文档的
-  `sectPr` 只声明 `pgSz` 而不声明 `pgMar`，python-docx 对缺失项返回 `None`，
-  `Emu(None)` 抛 `TypeError`，被上层当成「无法解析」整篇跳过。现在按 OOXML
-  规范默认值（A4 / 四边 1440 twips）推断，并由 `B5` 明确告知「版心为推断值」。
-- **D15 对横向合并单元格重复计数**。`row.cells` 会把 `gridSpan` 合并单元格按
-  逻辑列展开，同一个 `tcW` 被累加多次（实测一个跨 4 列的表头把 14.62cm 累加成
-  58.49cm）。改为遍历原始 `<w:tc>`，并兼容内容控件包裹的单元格。
-
-### Added
-
-- `case_no_pgmar.docx` / `case_merged_header.docx` 两个 fixture，以及对应的
-  回归断言与「推断值必须可见」的专项检查。
-- 这两个缺陷由一次独立的外部测试（WSL2 环境、10 份真实文档）发现。
-
 ## [0.1.2] - 2026-10-21
+
+本版由**两轮独立的外部测试**驱动（WSL2 环境，共 15 份真实业务文档），
+修复 3 个缺陷、补齐 4 处测试缺口。
 
 ### Fixed
 
 - **C10 在非 Windows 平台上完全失效** —— `installed_fonts()` 只读 Windows 注册表与
   `C:\Windows\Fonts`，在 Linux / macOS 上返回空集，C10 退化为「无法枚举本机字体，
   跳过检查」，字体检查实际处于关闭状态。
+- **页面属性缺失导致整篇无法解析**（静默漏检，危害高于误报）—— 部分文档的
+  `sectPr` 只声明 `pgSz` 而不声明 `pgMar`，python-docx 对缺失项返回 `None`，
+  `Emu(None)` 抛 `TypeError`，被上层当成「无法解析」整篇跳过。现在按 OOXML
+  规范默认值（A4 / 四边 1440 twips）推断，并由 `B5` 明确告知「版心为推断值」。
+- **D15 对横向合并单元格重复计数** —— `row.cells` 会把 `gridSpan` 合并单元格按
+  逻辑列展开，同一个 `tcW` 被累加多次（实测一个跨 4 列的表头把 14.62cm 累加成
+  58.49cm）。改为遍历原始 `<w:tc>`，并兼容内容控件包裹的单元格。
 
 ### Added
 
@@ -34,19 +26,26 @@
   （`fc-list`，Linux）→ macOS（`system_profiler`）。
 - 枚举结果用 `functools.lru_cache` 缓存，同一进程内只探测一次
   （Windows 上 273 个字体族耗时 4 ms）。
-- CI 的 ubuntu job 现在能真正执行 C10 断言（此前枚举为空会自动跳过）。
-
-- `tests/test_fonts.py`：字体枚举的单元测试（fc-list 解析 / system_profiler 解析 / 缓存），因为这两条路径在 Windows 上无法端到端验证，只能靠 mock 锁住。
+- `tests/test_fonts.py`：字体枚举的单元测试（fc-list / system_profiler / 缓存）。
+  这两条路径在 Windows 上无法端到端验证，只能靠 mock 锁住。
+- `case_no_pgmar.docx` / `case_merged_header.docx` 两个 fixture，以及对应的回归
+  断言与「推断值必须可见」的专项检查。回归用例 5 → 7。
+- CI 的 ubuntu job 现在能真正执行 C10 断言（此前枚举为空会自动跳过），
+  并新增单元测试步骤。
 
 ### Note
 
-> 此前 CI 的 4/4 全绿掩盖了这个缺陷：ubuntu 上 `HAS_FONT_ENV` 为 `False`，
-> 测试自动 SKIP 了 C10 断言。**"跳过"不等于"通过"**。
+> **「跳过」不等于「通过」。** 此前 CI 的 4/4 全绿掩盖了 C10 的实际失效：
+> ubuntu 上 `HAS_FONT_ENV` 为 `False`，测试自动 SKIP 了断言。
+>
+> 同理，`B5` 的推断提示是必须的——修掉旧的静默漏检，不能引入新的静默假设。
+> 版心一旦是推断出来的，就必须告诉用户「结论仅供参考」。
 
 ### Credit
 
-跨平台缺口由一次 WSL2 环境的外部交叉测试发现（WSL2 / Python 3.12，
-fontconfig 可枚举 85 个字体族）。
+三个缺陷均由独立的外部交叉测试发现（WSL2 / Python 3.12 / 15 份真实业务文档，
+两轮独立测试）。缺陷报告附带完整证据链与回滚验证，修复方案在此基础上补充了
+「推断值可见」与「原始 tc 遍历」两处改进。
 
 ## [0.1.1] - 2026-10-21
 
